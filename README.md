@@ -3,4 +3,4 @@ Wiki interativa de Stardew Valley desenvolvida como projeto de TCC para Techers,
 
 Data de inicio: 05/09/26
 
-<img src="https://i.redd.it/7wvp4hsqw2q91.png" width="300px">
+<img src="https://i.redd.it/7wvp4hsqw2q91.png" width="200px">
