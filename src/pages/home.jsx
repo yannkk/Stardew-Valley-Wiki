@@ -1,3 +1,6 @@
+import { useState } from "react"
+import { search } from "stardew-valley-data"
+
 import labubu from "../assets/fundo.png"
 import sixseven from "../assets/logo.png"
 import tutorial from "../assets/lupa.png"
@@ -16,7 +19,7 @@ const [ListaItem, setListaItem] = useState([]);
           <div className="w-128 h-10 bg-white rounded-md font-popozao shadow-[-4px_3px_2px_rgba(0,0,0,0.4)] flex items-center pl-2">
             <input
               className="w-full h-full bg-transparent outline-none border-none placeholder:text-[#783F04] placeholder:opacity-100"
-              placeholder="Search here!"
+              placeholder="Search here!" 
             />
           </div>
         </div>
