@@ -1,1 +1,9 @@
 @import "tailwindcss";
+@font-face {
+  font-family: "popozao";
+  src: url("./font/PressStart2P.ttf");
+}
+
+@theme {
+  --font-popozao: "popozao", sans-serif;
+}
