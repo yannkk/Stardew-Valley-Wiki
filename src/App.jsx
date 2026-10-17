@@ -1,8 +1,8 @@
-import {useState} from 'react'
-import Home from './view/index.jsx'
+// App.jsx
+import Home from "./pages/home";
 
 function App() {
-  return <Home/>
+  return <Home />;
 }
 
-export default App
+export default App;
