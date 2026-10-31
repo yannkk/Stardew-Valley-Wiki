@@ -7,3 +7,19 @@
 @theme {
   --font-popozao: "popozao", sans-serif;
 }
+
+/* ↓ cole aqui o @font-face da sua fonte popozao, se existir no arquivo atual ↓ */
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  display: block;
+  background: #dbbf98;
+}

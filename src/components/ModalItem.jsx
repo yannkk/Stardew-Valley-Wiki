@@ -1,5 +1,3 @@
-import { useIdioma } from "../i18n/idioma"
-
 // "sellPrice" -> "Sell Price"
 function rotulo(chave) {
   return chave
@@ -24,9 +22,7 @@ function urlImagem(caminho) {
 
 // Mostra qualquer tipo de valor
 function Valor({ v }) {
-  const { t } = useIdioma()
-
-  if (typeof v === "boolean") return <span>{v ? t("Yes") : t("No")}</span>
+  if (typeof v === "boolean") return <span>{v ? "Yes" : "No"}</span>
 
   // caminho de imagem vira imagem
   if (ehImagem(v)) {
@@ -67,9 +63,7 @@ function Valor({ v }) {
 
   // lista simples vira texto separado por vírgula; lista de objetos vira lista com marcadores
   if (Array.isArray(v)) {
-    if (v.every((x) => typeof x !== "object")) {
-      return <span>{v.map((x) => (typeof x === "string" ? t(x) : x)).join(", ")}</span>
-    }
+    if (v.every((x) => typeof x !== "object")) return <span>{v.join(", ")}</span>
     return (
       <ul className="pl-4 list-disc">
         {v.map((x, i) => (
@@ -87,7 +81,7 @@ function Valor({ v }) {
           .filter(([, val]) => !vazio(val))
           .map(([k, val]) => (
             <div key={k}>
-              <span className="opacity-70">{t(rotulo(k))}: </span>
+              <span className="opacity-70">{rotulo(k)}: </span>
               <Valor v={val} />
             </div>
           ))}
@@ -101,8 +95,6 @@ function Valor({ v }) {
 const ESCONDER = ["id", "name", "image", "description"]
 
 function ModalItem({ item, cor = "#dbbf98", onFechar }) {
-  const { t } = useIdioma()
-
   if (!item) return null
 
   const campos = Object.entries(item).filter(
@@ -112,24 +104,24 @@ function ModalItem({ item, cor = "#dbbf98", onFechar }) {
   return (
     <div
       onClick={onFechar}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/50 sm:p-4"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg max-h-[85vh] overflow-y-auto p-6 border-4 border-[#783F04] rounded-xl text-[#783F04] font-popozao"
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6 border-4 border-[#783F04] rounded-xl text-[#783F04] font-popozao break-words"
         style={{ backgroundColor: cor }}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           {item.image && (
             <img
               src={urlImagem(item.image)}
               alt=""
-              className="object-contain w-16 h-16"
+              className="object-contain w-12 h-12 sm:w-16 sm:h-16 shrink-0"
               style={{ imageRendering: "pixelated" }}
               onError={(e) => (e.currentTarget.style.display = "none")}
             />
           )}
-          <h2 className="text-[22px]">{item.name}</h2>
+          <h2 className="text-[18px] sm:text-[22px]">{item.name}</h2>
         </div>
 
         {item.description && <p className="mt-3 text-[13px]">{item.description}</p>}
@@ -137,7 +129,7 @@ function ModalItem({ item, cor = "#dbbf98", onFechar }) {
         <dl className="mt-5 space-y-3 text-[13px]">
           {campos.map(([chave, valor]) => (
             <div key={chave}>
-              <dt className="text-[11px] uppercase opacity-60">{t(rotulo(chave))}</dt>
+              <dt className="text-[11px] uppercase opacity-60">{rotulo(chave)}</dt>
               <dd><Valor v={valor} /></dd>
             </div>
           ))}
@@ -145,9 +137,9 @@ function ModalItem({ item, cor = "#dbbf98", onFechar }) {
 
         <button
           onClick={onFechar}
-          className="mt-6 text-[12px] underline hover:opacity-70"
+          className="px-4 py-2 mt-6 text-[13px] border-2 border-[#783F04] rounded-lg hover:bg-[#783F04] hover:text-[#F3E3B3]"
         >
-          {t("Close")}
+          Close
         </button>
       </div>
     </div>

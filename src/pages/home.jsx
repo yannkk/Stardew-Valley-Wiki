@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
-import { search, crops, fish, villagers, minerals, locations, achievements } from "stardew-valley-data"
-import { todos, grupos, totalItens, iconeGrupo } from "../data/modulos"
-import { useIdioma } from "../i18n/idioma"
+import { useNavigate } from "react-router-dom"
+import { crops, fish, villagers, minerals, locations, achievements } from "stardew-valley-data"
+import { todos, grupos, totalItens, iconeGrupo, rotulo } from "../data/modulos"
 
 import Card from "../components/Card"
 import ModalItem from "../components/ModalItem"
@@ -39,6 +39,48 @@ function urlImagem(item) {
   if (!item.image) return null
   return encodeURI(`/stardew/${item.image.replace(/^images\//, "")}`)
 }
+
+// ---------- ÍNDICE DE BUSCA ----------
+// 1) páginas: os cards da Home + todos os módulos (weapons, events, hats...)
+const paginas = new Map()
+
+for (const c of categorias) {
+  paginas.set(c.slug, {
+    slug: c.slug,
+    titulo: c.label,
+    busca: `${c.label} ${c.slug}`.toLowerCase(),
+    imagem: c.icon,
+    tag: "Page",
+  })
+}
+
+for (const [nome, fn] of Object.entries(todos)) {
+  if (paginas.has(nome)) continue
+  const comImagem = fn().get().find((i) => i.image)
+  paginas.set(nome, {
+    slug: nome,
+    titulo: rotulo(nome),
+    busca: `${rotulo(nome)} ${nome}`.toLowerCase(),
+    imagem: comImagem ? urlImagem(comImagem) : null,
+    tag: "Page",
+  })
+}
+
+// 2) itens de todos os módulos
+const itens = Object.entries(todos).flatMap(([modulo, fn]) =>
+  fn()
+    .get()
+    .filter((item) => item.name)
+    .map((item) => ({
+      item,
+      titulo: item.name,
+      busca: item.name.toLowerCase(),
+      imagem: urlImagem(item),
+      tag: rotulo(modulo),
+    }))
+)
+
+const indice = [...paginas.values(), ...itens]
 
 // Recorta o PNG: ignora a margem transparente e pega só o miolo horizontal
 // e a metade de cima do papel (borda rasgada + um pouco de miolo).
@@ -85,7 +127,7 @@ function recortarPapel(src, callback) {
 }
 
 function Home() {
-  const { t } = useIdioma()
+  const navigate = useNavigate()
   const [texto, setTexto] = useState("")
   const [escolhido, setEscolhido] = useState(null)
   const [papel, setPapel] = useState({ url: null, cor: "#dbbf98" })
@@ -94,40 +136,39 @@ function Home() {
     recortarPapel(pergaminho, setPapel)
   }, [])
 
-  const resultados = texto.trim() ? search(texto).slice(0, 10) : []
+  const termo = texto.trim().toLowerCase()
 
-  // procura o item completo em todos os módulos; se não achar, usa o da busca
-  function escolher(item) {
+  // páginas primeiro, depois quem começa com o termo, depois o resto
+  const resultados = termo
+    ? indice
+        .filter((r) => r.busca.includes(termo))
+        .sort((a, b) => {
+          const pa = a.slug ? 1 : 0
+          const pb = b.slug ? 1 : 0
+          if (pa !== pb) return pb - pa
+          return b.busca.startsWith(termo) - a.busca.startsWith(termo)
+        })
+        .slice(0, 12)
+    : []
+
+  function escolher(r) {
     setTexto("")
-
-    let completo = null
-    for (const modulo of Object.values(todos)) {
-      try {
-        const achado = modulo().findByName(item.name)
-        if (achado) {
-          completo = achado
-          break
-        }
-      } catch {
-        // módulo sem findByName, segue para o próximo
-      }
-    }
-
-    setEscolhido(completo ?? item)
+    if (r.slug) navigate(`/${r.slug}`)
+    else setEscolhido(r.item)
   }
 
   return (
-    <div style={{ backgroundColor: papel.cor }}>
+    <div className="overflow-x-hidden" style={{ backgroundColor: papel.cor }}>
       {/* HERO */}
       <div
-        className="relative z-10 flex flex-col items-center gap-8 pb-36 text-[#783F04] bg-cover bg-center"
+        className="relative z-10 flex flex-col items-center gap-6 px-4 pb-28 text-[#783F04] bg-cover bg-center sm:gap-8 sm:pb-36"
         style={{ backgroundImage: `url(${fundo})` }}
       >
         {/* borda rasgada no rodapé do hero, atrás da busca */}
         {papel.url && (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-20 translate-y-px"
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-12 translate-y-px sm:h-20"
             style={{
               backgroundImage: `url(${papel.url})`,
               backgroundRepeat: "repeat-x",
@@ -138,13 +179,13 @@ function Home() {
           />
         )}
 
-        <img className="relative z-10 w-176 mt-16" src={logo} alt="Logo" />
+        <img className="relative z-10 w-full max-w-176 mt-10 sm:mt-16" src={logo} alt="Logo" />
 
-        <div className="relative z-20 w-128">
+        <div className="relative z-20 w-full max-w-128">
           <div className="flex items-center h-10 px-3 bg-white rounded-md font-popozao shadow-[-4px_3px_2px_rgba(0,0,0,0.4)]">
             <input
-              className="flex-1 h-full bg-transparent outline-none placeholder:text-[#783F04] placeholder:opacity-100"
-              placeholder={t("Search here!")}
+              className="flex-1 min-w-0 h-full text-[14px] bg-transparent outline-none placeholder:text-[#783F04] placeholder:opacity-100"
+              placeholder="Search here!"
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
             />
@@ -152,17 +193,17 @@ function Home() {
           </div>
 
           {resultados.length > 0 && (
-            <ul className="absolute inset-x-0 z-50 mt-2 bg-white rounded-md shadow-xl max-h-60 overflow-y-auto border-2 border-[#783F04]/30">
-              {resultados.map((item, i) => (
+            <ul className="absolute inset-x-0 z-50 mt-2 bg-white rounded-md shadow-xl max-h-72 overflow-y-auto border-2 border-[#783F04]/30">
+              {resultados.map((r, i) => (
                 <li
-                  key={i}
-                  onClick={() => escolher(item)}
-                  className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-amber-100"
+                  key={`${r.tag}-${r.titulo}-${i}`}
+                  onClick={() => escolher(r)}
+                  className="flex items-center gap-3 px-3 py-3 cursor-pointer sm:px-4 sm:py-2 hover:bg-amber-100"
                 >
                   <span className="flex items-center justify-center w-8 h-8 shrink-0">
-                    {urlImagem(item) && (
+                    {r.imagem && (
                       <img
-                        src={urlImagem(item)}
+                        src={r.imagem}
                         alt=""
                         className="max-w-full max-h-full"
                         style={{ imageRendering: "pixelated" }}
@@ -170,7 +211,8 @@ function Home() {
                       />
                     )}
                   </span>
-                  <span>{item.name}</span>
+                  <span className="flex-1 min-w-0 text-[14px] break-words">{r.titulo}</span>
+                  <span className="text-[10px] opacity-50 shrink-0">{r.tag}</span>
                 </li>
               ))}
             </ul>
@@ -179,21 +221,21 @@ function Home() {
       </div>
 
       {/* CATEGORIAS */}
-      <section className="pt-10 pb-28">
-        <div className="grid grid-cols-4 gap-6 max-w-3xl mx-auto px-4">
+      <section className="pt-8 pb-16 sm:pt-10 sm:pb-28">
+        <div className="grid grid-cols-2 gap-4 px-4 mx-auto max-w-3xl sm:grid-cols-3 sm:gap-6 md:grid-cols-4">
           {categorias.map((c) => (
-            <Card key={c.slug} {...c} label={t(c.label)} />
+            <Card key={c.slug} {...c} />
           ))}
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="relative bg-[#3F2E20] px-6 pt-28 pb-12 text-[#F3E3B3] font-popozao">
+      <footer className="relative bg-[#3F2E20] px-4 pt-24 pb-10 text-[#F3E3B3] font-popozao sm:px-6 sm:pt-28 sm:pb-12">
         {/* papel rasgado no topo (a mesma faixa do hero, virada de cabeça para baixo) */}
         {papel.url && (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 top-0 h-20 scale-y-[-1]"
+            className="pointer-events-none absolute inset-x-0 top-0 h-12 scale-y-[-1] sm:h-20"
             style={{
               backgroundImage: `url(${papel.url})`,
               backgroundRepeat: "repeat-x",
@@ -205,21 +247,24 @@ function Home() {
         )}
 
         <div>
-          <p className="text-[28px] text-center mb-8">{t("STARDEW VALLEY - FANMADE WIKI")}</p>
-          <div className="relative mx-auto flex max-w-6xl flex-col gap-10 md:flex-row md:justify-between">
+          <p className="mb-8 text-[18px] leading-tight text-center sm:text-[28px]">
+            STARDEW VALLEY - FANMADE WIKI
+          </p>
+
+          <div className="relative flex flex-col max-w-6xl gap-10 mx-auto md:flex-row md:justify-between">
             {/* ESQUERDA */}
             <div>
-              <p className="mt-1 text-[14px]">{t("Guide non-official, made by fan")}</p>
+              <p className="mt-1 text-[12px] sm:text-[14px]">Guide non-official, made by fan</p>
 
-              <div className="mt-16 text-[14px]">
-                <p>{t("Made by Adryan Thesse")}</p>
+              <div className="mt-10 text-[12px] sm:mt-16 sm:text-[14px]">
+                <p>Made by Adryan Thesse</p>
                 <p>TCC - Techers - FrontEnd</p>
                 <p>2026</p>
               </div>
 
-              <hr className="mt-10 w-[320px] border-[#F3E3B3]/40" />
+              <hr className="w-full mt-8 sm:mt-10 max-w-[320px] border-[#F3E3B3]/40" />
 
-              <div className="mt-6 max-w-[260px] text-[11px] leading-[14px] opacity-40">
+              <div className="mt-6 max-w-[320px] text-[11px] leading-[14px] opacity-40">
                 <p>Data provided by the stardew-valley-data library (GitHub).</p>
                 <p className="mt-3">
                   Not affiliated with ConcernedApe. Stardew Valley is a registered
@@ -230,9 +275,9 @@ function Home() {
 
             {/* DIREITA */}
             <div className="flex flex-col items-start">
-              <img className="w-[380px]" src={logo} alt="Logo" />
+              <img className="w-full max-w-[260px] md:max-w-[380px]" src={logo} alt="Logo" />
 
-              <ul className="mt-10 space-y-5 text-[13px]">
+              <ul className="mt-8 space-y-4 text-[13px] md:mt-10 md:space-y-5">
                 <li className="flex items-center gap-3">
                   <img className="w-7" src={github} alt="GitHub" />
                   @yannkk
