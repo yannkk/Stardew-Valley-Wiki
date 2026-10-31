@@ -1,19 +1,37 @@
 import { useState, useEffect } from "react"
 import { search, crops, fish, villagers, minerals, locations, achievements } from "stardew-valley-data"
+import { todos, grupos, totalItens, iconeGrupo } from "../data/modulos"
+import { useIdioma } from "../i18n/idioma"
 
 import Card from "../components/Card"
+import ModalItem from "../components/ModalItem"
 import fundo from "../assets/fundo.png"
 import logo from "../assets/logo.png"
 import lupa from "../assets/lupa.png"
 import pergaminho from "../assets/pergaminho.png"
+import github from "../assets/github.png"
+import discord from "../assets/discord.png"
+import instagram from "../assets/instagram.png"
 
+const principais = [
+  { slug: "crops", icon: "/stardew/crops/carrot/crop.png", label: "Crops", count: crops().count(), color: "bg-[#3F4A2B]" },
+  { slug: "fish", icon: "/stardew/fish/Sturgeon.png", label: "Fish", count: fish().count(), color: "bg-[#3B5A73]" },
+  { slug: "villagers", icon: "/stardew/villagers/Abigail.png", label: "Villagers", count: villagers().count(), color: "bg-[#5B3F7A]" },
+  { slug: "minerals", icon: "/stardew/minerals/foraged-minerals/Quartz.png", label: "Minerals", count: minerals().count(), color: "bg-[#6B3A1F]" },
+  { slug: "locations", icon: "/stardew/maps/icons/Standard Farm Map Icon.png", label: "Locations", count: locations().count(), color: "bg-[#2F6F6A]" },
+  { slug: "achievements", icon: "/stardew/achievements/Achievement_Star_09.png", label: "Progress", count: achievements().count(), color: "bg-[#A07A10]" },
+]
+
+// os 6 principais + um card para cada grupo (Gear, Farm & Nature...)
 const categorias = [
-  { icon: "/stardew/crops/carrot/crop.png", label: "Crops", count: crops().count(), color: "bg-[#3F4A2B]" },
-  { icon: "/stardew/fish/Sturgeon.png", label: "Fish", count: fish().count(), color: "bg-[#3B5A73]" },
-  { icon: "/stardew/villagers/Abigail.png", label: "Villagers", count: villagers().count(), color: "bg-[#5B3F7A]" },
-  { icon: "/stardew/minerals/foraged-minerals/Quartz.png", label: "Minerals", count: minerals().count(), color: "bg-[#6B3A1F]" },
-  { icon: "/stardew/maps/icons/Standard Farm Map Icon.png", label: "Locations", count: locations().count(), color: "bg-[#2F6F6A]" },
-  { icon: "/stardew/achievements/Achievement_Star_09.png", label: "Progress", count: achievements().count(), color: "bg-[#A07A10]" },
+  ...principais,
+  ...grupos.map((g) => ({
+    slug: g.id,
+    icon: iconeGrupo(g),
+    label: g.titulo,
+    count: totalItens(g),
+    color: g.cor,
+  })),
 ]
 
 // "images/crops/parsnip/crop.png" -> "/stardew/crops/parsnip/crop.png"
@@ -67,6 +85,7 @@ function recortarPapel(src, callback) {
 }
 
 function Home() {
+  const { t } = useIdioma()
   const [texto, setTexto] = useState("")
   const [escolhido, setEscolhido] = useState(null)
   const [papel, setPapel] = useState({ url: null, cor: "#dbbf98" })
@@ -77,9 +96,24 @@ function Home() {
 
   const resultados = texto.trim() ? search(texto).slice(0, 10) : []
 
+  // procura o item completo em todos os módulos; se não achar, usa o da busca
   function escolher(item) {
-    setEscolhido(item)
     setTexto("")
+
+    let completo = null
+    for (const modulo of Object.values(todos)) {
+      try {
+        const achado = modulo().findByName(item.name)
+        if (achado) {
+          completo = achado
+          break
+        }
+      } catch {
+        // módulo sem findByName, segue para o próximo
+      }
+    }
+
+    setEscolhido(completo ?? item)
   }
 
   return (
@@ -110,7 +144,7 @@ function Home() {
           <div className="flex items-center h-10 px-3 bg-white rounded-md font-popozao shadow-[-4px_3px_2px_rgba(0,0,0,0.4)]">
             <input
               className="flex-1 h-full bg-transparent outline-none placeholder:text-[#783F04] placeholder:opacity-100"
-              placeholder="Search here!"
+              placeholder={t("Search here!")}
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
             />
@@ -146,29 +180,79 @@ function Home() {
 
       {/* CATEGORIAS */}
       <section className="pt-10 pb-28">
-        <div className="grid grid-cols-3 gap-6 max-w-xl mx-auto px-4">
+        <div className="grid grid-cols-4 gap-6 max-w-3xl mx-auto px-4">
           {categorias.map((c) => (
-            <Card key={c.label} {...c} />
+            <Card key={c.slug} {...c} label={t(c.label)} />
           ))}
         </div>
       </section>
 
-      {/* MODAL */}
-      {escolhido && (
-        <div
-          onClick={() => setEscolhido(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-        >
+      {/* FOOTER */}
+      <footer className="relative bg-[#3F2E20] px-6 pt-28 pb-12 text-[#F3E3B3] font-popozao">
+        {/* papel rasgado no topo (a mesma faixa do hero, virada de cabeça para baixo) */}
+        {papel.url && (
           <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg p-6 border-4 border-[#783F04] rounded-xl text-[#783F04]"
-            style={{ backgroundColor: papel.cor }}
-          >
-            <h2 className="text-2xl font-bold">{escolhido.name}</h2>
-            <p>{escolhido.description}</p>
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-0 h-20 scale-y-[-1]"
+            style={{
+              backgroundImage: `url(${papel.url})`,
+              backgroundRepeat: "repeat-x",
+              backgroundSize: "auto 100%",
+              backgroundPosition: "left bottom",
+              imageRendering: "pixelated",
+            }}
+          />
+        )}
+
+        <div>
+          <p className="text-[28px] text-center mb-8">{t("STARDEW VALLEY - FANMADE WIKI")}</p>
+          <div className="relative mx-auto flex max-w-6xl flex-col gap-10 md:flex-row md:justify-between">
+            {/* ESQUERDA */}
+            <div>
+              <p className="mt-1 text-[14px]">{t("Guide non-official, made by fan")}</p>
+
+              <div className="mt-16 text-[14px]">
+                <p>{t("Made by Adryan Thesse")}</p>
+                <p>TCC - Techers - FrontEnd</p>
+                <p>2026</p>
+              </div>
+
+              <hr className="mt-10 w-[320px] border-[#F3E3B3]/40" />
+
+              <div className="mt-6 max-w-[260px] text-[11px] leading-[14px] opacity-40">
+                <p>Data provided by the stardew-valley-data library (GitHub).</p>
+                <p className="mt-3">
+                  Not affiliated with ConcernedApe. Stardew Valley is a registered
+                  trademark of its respective owners.
+                </p>
+              </div>
+            </div>
+
+            {/* DIREITA */}
+            <div className="flex flex-col items-start">
+              <img className="w-[380px]" src={logo} alt="Logo" />
+
+              <ul className="mt-10 space-y-5 text-[13px]">
+                <li className="flex items-center gap-3">
+                  <img className="w-7" src={github} alt="GitHub" />
+                  @yannkk
+                </li>
+                <li className="flex items-center gap-3">
+                  <img className="w-7" src={discord} alt="Discord" />
+                  @ratinhokjk
+                </li>
+                <li className="flex items-center gap-3">
+                  <img className="w-7" src={instagram} alt="Instagram" />
+                  @ratookk
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
-      )}
+      </footer>
+
+      {/* MODAL */}
+      <ModalItem item={escolhido} cor={papel.cor} onFechar={() => setEscolhido(null)} />
     </div>
   )
 }
