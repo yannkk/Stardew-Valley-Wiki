@@ -62,7 +62,7 @@ function Categoria() {
   return (
     <div className="min-h-screen p-4 sm:p-6 bg-[#dbbf98] text-[#783F04] font-popozao overflow-x-hidden">
       <div className="mx-auto max-w-6xl">
-        <Link to="/" className="inline-block py-2 text-[14px]">← Voltar</Link>
+        <Link to="/" className="inline-block py-2 text-[14px] cursor-pointer">← Voltar</Link>
 
         <h1 className="flex items-center gap-3 mt-1 mb-6 text-[22px] sm:text-[28px]">
           {grupo && iconeGrupo(grupo) && (
@@ -94,7 +94,7 @@ function Categoria() {
                     key={i}
                     onClick={() => setEscolhido(item)}
                     className={
-                      "min-w-0 p-3 rounded-lg bg-[#FFF8DC]/60 hover:bg-[#FFF8DC] " +
+                      "min-w-0 p-3 rounded-lg bg-[#FFF8DC]/60 hover:bg-[#FFF8DC] cursor-pointer " +
                       (rosto
                         ? "flex flex-row items-center justify-center gap-2 sm:gap-3"
                         : "flex flex-col items-center gap-2")

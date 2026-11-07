@@ -1,4 +1,6 @@
-// "sellPrice" -> "Sell Price"
+import { useEffect } from "react"
+
+
 function rotulo(chave) {
   return chave
     .replace(/([A-Z])/g, " $1")
@@ -94,7 +96,20 @@ function Valor({ v }) {
 
 const ESCONDER = ["id", "name", "image", "description"]
 
+
 function ModalItem({ item, cor = "#dbbf98", onFechar }) {
+  // fecha com a tecla Esc
+  useEffect(() => {
+    if (!item) return
+
+    function aoApertar(e) {
+      if (e.key === "Escape") onFechar()
+    }
+
+    window.addEventListener("keydown", aoApertar)
+    return () => window.removeEventListener("keydown", aoApertar)
+  }, [item, onFechar])
+
   if (!item) return null
 
   const campos = Object.entries(item).filter(

@@ -23,3 +23,9 @@ body {
   display: block;
   background: #dbbf98;
 }
+
+button,
+[role="button"],
+a {
+  cursor: pointer;
+}
